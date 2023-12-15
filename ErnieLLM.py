@@ -14,7 +14,7 @@ class ErnieLLM:
 
     def response(self, query, system=""):
         response_content = erniebot.ChatCompletion.create(
-            model="ernie-bot",
+            model=self.model_name,
             messages=[{"role": "user", "content": query}],
             system=system
         )
@@ -22,7 +22,7 @@ class ErnieLLM:
 
     def stream_response(self, query, system=""):
         response_iterator = erniebot.ChatCompletion.create(
-            model="ernie-bot",
+            model=self.model_name,
             messages=[{"role": "user", "content": query}],
             stream=True,
             system=system

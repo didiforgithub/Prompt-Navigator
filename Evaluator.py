@@ -38,7 +38,7 @@ class Evaluator:
         问题：{question}
         答案字典：{answer_dict}
         """
-        eval_result = self.llm.response(evaluate_prompt)
+        eval_result = extract_dict(self.llm.response(evaluate_prompt))
         return eval_result
 
 if __name__ == "__main__":

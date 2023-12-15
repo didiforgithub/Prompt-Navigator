@@ -2,7 +2,12 @@ import streamlit as st
 from Generator import PromptGenerator
 from ErnieLLM import ErnieLLM
 from Modifier import Modify
+from Evaluator import Evaluator
 from streamlit_chat import message
+
+session_state = st.session_state
+if 'response_result' not in session_state:
+    session_state.response_result= []
 
 # 设置全局属性
 st.set_page_config(
@@ -12,9 +17,6 @@ st.set_page_config(
 )
 
 st.title('Streamlit Demo ⚡')
-session_state = st.session_state
-if 'response_result' not in session_state:
-    session_state.response_result= []
 tab1, tab2, tab3 = st.tabs(['Introduction', 'Prompt Generate', 'Evaluation'])
 
 
@@ -73,20 +75,28 @@ with tab3:
     if st.button("Generate Result"):
         eval_llm = ErnieLLM()
         eval_columns = st.columns(len(selected_strategys) + 1 )
+        answer_dict = {}
         for i, col in enumerate(eval_columns):
             with col:
                 if i == 0:
                     st.header("origin result")
-                    eval_result = eval_llm.response(user_input + eval_example_input)
-                    st.text_area(label="origin result", value=eval_result, height=200)
+                    generate_result = eval_llm.response(user_input + eval_example_input)
+                    st.text_area(label="origin result", value=generate_result, height=200)
+                    answer_dict["origin result"] = generate_result
                 else:
                     st.header(selected_strategys[i - 1])
-                    eval_result = eval_llm.response(session_state.response_result[i-1] + eval_example_input)
+                    generate_result = eval_llm.response(session_state.response_result[i-1] + eval_example_input)
                     st.text_area(
                         label=selected_strategys[i - 1],
-                        value=eval_result,
+                        value=generate_result,
                         height=200
                     )
+                    answer_dict[selected_strategys[i - 1]] = generate_result
+    if st.button("Eval"):
+        evaluator = Evaluator()
+        eval_result = evaluator.evaluate(eval_example_input,answer_dict)
+        # TODO 需要一个方法，能够回调一个结果过去
+        st.write(eval_result)
 
     # message("Hello, I'm a chatbot!")  # 显示聊天消息
     # message("How can I help you?", is_user=True)  # 将消息对齐到右侧

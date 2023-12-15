@@ -9,7 +9,7 @@ import erniebot
 
 
 class ErnieLLM:
-    def __init__(self, model_name="ernie-bot"):
+    def __init__(self, model_name="ernie-bot-4"):
         self.model_name = model_name
 
     def response(self, query, system=""):

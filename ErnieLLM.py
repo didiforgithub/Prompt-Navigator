@@ -30,8 +30,17 @@ class ErnieLLM:
         for res in response_iterator:
             yield res.get_result()
 
+    def multiple_messages_response(self, messages, system=""):
+        response_content = erniebot.ChatCompletion.create(
+            model=self.model_name,
+            messages=messages,
+            system=system
+        )
+        return response_content.get_result()
+
 
 if __name__ == "__main__":
+
     test_chat = ErnieLLM()
 
     # 完整输出例子

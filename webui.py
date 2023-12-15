@@ -1,7 +1,13 @@
 import streamlit as st
 from Generator import PromptGenerator
 from ErnieLLM import ErnieLLM
+from Modifier import Modify
+from Evaluator import Evaluator
 from streamlit_chat import message
+
+session_state = st.session_state
+if 'response_result' not in session_state:
+    session_state.response_result= []
 
 # 设置全局属性
 st.set_page_config(
@@ -11,9 +17,6 @@ st.set_page_config(
 )
 
 st.title('Streamlit Demo ⚡')
-session_state = st.session_state
-if 'response_result' not in session_state:
-    session_state.response_result= []
 tab1, tab2, tab3 = st.tabs(['Introduction', 'Prompt Generate', 'Evaluation'])
 
 
@@ -32,7 +35,7 @@ with tab2:
         user_input = st.text_area("Your Prompt", height=100)
     with c2:
         selected_strategys = st.multiselect(
-            "Strategy:", ["zero-shot cot", "few-shot cot", "self-consistency cot"]
+            "Strategy:", ["zero-shot cot", "few-shot cot", "zero-shot contrastive"]
         )
         st.write('num:', len(selected_strategys))
 
@@ -46,31 +49,54 @@ with tab2:
             with col:
                 if i == 0:
                     st.header("origin input")
-                    st.text_area(label="origin input", value=user_input, height=200)
+                    st.text_area(label="origin input", value=user_input, height=200, disabled=True)
                 else:
                     st.header(selected_strategys[i - 1])
-                    st.text_area(label=selected_strategys[i - 1], value=session_state.response_result[i-1], height=200)
+                    st.text_area(label=selected_strategys[i - 1], value=session_state.response_result[i-1], height=200, disabled=True)
+
+    # TODO 如何避免Reload需要再看一下
+    reserve_input = st.text_area(label="reserve", value="reserve", height=50)
+    delete_input = st.text_area(label="delete", value="delete", height=50)
+    add_input = st.text_area(label="add", value="add", height=50)
+
+    if st.button("生成修改结果"):
+        modify_block = Modify()
+        modified_result = modify_block.GetModifyResult(
+            reserve=reserve_input,
+            delete=delete_input,
+            add=add_input
+        )
+        st.text_area(label="modified result", value=modified_result, height=50)
+
 
 with tab3:
     st.title('Evaluation Different prompt generation strategies')
     eval_example_input = st.text_area("Example", height=100)
-    if st.button("Eval"):
+    if st.button("Generate Result"):
         eval_llm = ErnieLLM()
         eval_columns = st.columns(len(selected_strategys) + 1 )
+        answer_dict = {}
         for i, col in enumerate(eval_columns):
             with col:
                 if i == 0:
                     st.header("origin result")
-                    eval_result = eval_llm.response(user_input + eval_example_input)
-                    st.text_area(label="origin result", value=eval_result, height=200)
+                    generate_result = eval_llm.response(user_input + eval_example_input)
+                    st.text_area(label="origin result", value=generate_result, height=200)
+                    answer_dict["origin result"] = generate_result
                 else:
                     st.header(selected_strategys[i - 1])
-                    eval_result = eval_llm.response(session_state.response_result[i-1] + eval_example_input)
+                    generate_result = eval_llm.response(session_state.response_result[i-1] + eval_example_input)
                     st.text_area(
                         label=selected_strategys[i - 1],
-                        value=eval_result,
+                        value=generate_result,
                         height=200
                     )
+                    answer_dict[selected_strategys[i - 1]] = generate_result
+    if st.button("Eval"):
+        evaluator = Evaluator()
+        eval_result = evaluator.evaluate(eval_example_input,answer_dict)
+        # TODO 需要一个方法，能够回调一个结果过去
+        st.write(eval_result)
 
     # message("Hello, I'm a chatbot!")  # 显示聊天消息
     # message("How can I help you?", is_user=True)  # 将消息对齐到右侧

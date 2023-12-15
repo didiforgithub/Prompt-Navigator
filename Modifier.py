@@ -1,12 +1,13 @@
 import copy
 from ErnieLLM import ErnieLLM
 
+
 class Modify:
     def __init__(self):
         self.llm = ErnieLLM()
         self.prompt_message = [
             {
-                "role": "user", 
+                "role": "user",
                 "content": "现在，你将成为一个高效的信息整合器。\
                     我将向你提供一些重要的信息片段，并明确告诉你哪些信息是不允许包含在内的。\
                     你的任务是将这些重要信息巧妙地融合到一段流畅且连贯的话语中，同时确保所有不应出现的信息都被排除在外。\
@@ -22,8 +23,7 @@ class Modify:
                 'content': "好的，请提供需要整合的信息片段，以及需要避开的信息片段，我会尽力帮助您。"
             }
         ]
-        
-        
+
     def ConvertToDict(self, dict_str):
         # 直接尝试能否转成dict
         try:
@@ -39,7 +39,6 @@ class Modify:
             except:
                 return dict_str
         return dict_str
-    
 
     def GetModifyResult(self, reserve = "", delete = "", add = ""):
         response_message = {"role" : 'assistant', 'content' : None}
@@ -113,14 +112,15 @@ class Modify:
         return eval(response_message['content'])['result']
 
 
+
 if __name__ == "__main__":
     modify_block = Modify()
     modified_prompt = modify_block.GetModifyResult(
-        reserve = "你的回答不仅要正确无误，还要深入浅出，易于理解，即便是最复杂的数学概念也要能够娓娓道来，让任何没有数学背景的人都能够一听就懂。\n\
+        reserve="你的回答不仅要正确无误，还要深入浅出，易于理解，即便是最复杂的数学概念也要能够娓娓道来，让任何没有数学背景的人都能够一听就懂。\n\
                 你现在是一位伟大的数学家，拥有深不可测的智慧和破解任何数学难题的能力。\n\
                 你可以引用历史上的数学成就。",
-        delete = "你可以引用历史上的数学成就，或者提出全新的观点或方法论。同时，你所提供的解决方案要创新，能够启发思考，甚至可能引领数学领域的新发展。\n\
+        delete="你可以引用历史上的数学成就，或者提出全新的观点或方法论。同时，你所提供的解决方案要创新，能够启发思考，甚至可能引领数学领域的新发展。\n\
                 让任何没有数学背景的人都能够一听就懂。",
-        add = "对于四则运算之类的题目，请你根据先乘除后加减的顺序，逐步计算，得到最终的结果。你的计算过程需要有所体现。"
+        add="对于四则运算之类的题目，请你根据先乘除后加减的顺序，逐步计算，得到最终的结果。你的计算过程需要有所体现。"
     )
     print(modified_prompt)

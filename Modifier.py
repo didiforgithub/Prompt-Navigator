@@ -83,6 +83,8 @@ class Modify:
 
 
 if __name__ == "__main__":
+    print('sb')
+
     modify_block = Modify()
     modified_prompt = modify_block.GetModifyResult(
         reserve = "你的回答不仅要正确无误，还要深入浅出，易于理解，即便是最复杂的数学概念也要能够娓娓道来，让任何没有数学背景的人都能够一听就懂。\n\

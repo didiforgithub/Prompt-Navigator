@@ -83,7 +83,6 @@ class Modify:
 
 
 if __name__ == "__main__":
-    print('sb')
 
     modify_block = Modify()
     modified_prompt = modify_block.GetModifyResult(

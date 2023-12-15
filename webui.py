@@ -13,10 +13,8 @@ st.set_page_config(
 st.title('Streamlit Demo ⚡')
 session_state = st.session_state
 if 'response_result' not in session_state:
-    session_state.response_result= []
+    session_state.response_result = []
 tab1, tab2, tab3 = st.tabs(['Introduction', 'Prompt Generate', 'Evaluation'])
-
-
 
 with tab1:
     '''
@@ -49,14 +47,15 @@ with tab2:
                     st.text_area(label="origin input", value=user_input, height=200)
                 else:
                     st.header(selected_strategys[i - 1])
-                    st.text_area(label=selected_strategys[i - 1], value=session_state.response_result[i-1], height=200)
+                    st.text_area(label=selected_strategys[i - 1], value=session_state.response_result[i - 1],
+                                 height=200)
 
 with tab3:
     st.title('Evaluation Different prompt generation strategies')
     eval_example_input = st.text_area("Example", height=100)
     if st.button("Eval"):
         eval_llm = ErnieLLM()
-        eval_columns = st.columns(len(selected_strategys) + 1 )
+        eval_columns = st.columns(len(selected_strategys) + 1)
         for i, col in enumerate(eval_columns):
             with col:
                 if i == 0:
@@ -65,7 +64,7 @@ with tab3:
                     st.text_area(label="origin result", value=eval_result, height=200)
                 else:
                     st.header(selected_strategys[i - 1])
-                    eval_result = eval_llm.response(session_state.response_result[i-1] + eval_example_input)
+                    eval_result = eval_llm.response(session_state.response_result[i - 1] + eval_example_input)
                     st.text_area(
                         label=selected_strategys[i - 1],
                         value=eval_result,

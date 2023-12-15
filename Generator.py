@@ -1,4 +1,5 @@
 from ErnieLLM import ErnieLLM
+
 """
 这个部分的代码去写Generate部分，
 可以
@@ -89,4 +90,5 @@ if __name__ == "__main__":
     # print(prompt_generator.generate("如果我和我名义上的妈妈没有血缘关系，那么我妈妈有没有可能不是我外婆的女儿？", "few-shot cot"))
     examples = ["input:求直角边长度分别为3和4的直角三角形的面积 output:6"]
     # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "zero-shot cot"))
-    print(prompt_generator.generate("鸡兔同笼，头共35个，脚共104只，求鸡与兔各有多少个头？", "few-shot cot", examples=examples))
+    print(prompt_generator.generate("鸡兔同笼，头共35个，脚共104只，求鸡与兔各有多少个头？", "few-shot cot",
+                                    examples=examples))

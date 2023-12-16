@@ -20,6 +20,8 @@ class Evaluator:
             self.llm = OpenAILLM()
         elif model_series == "llama-7b":
             self.llm = Llama()
+        else:
+            self.llm = ErnieLLM()
 
     def evaluate(self, question, answer_dict):
         # 输入进来一个Dict，给一个相同Dict的输出，以百分制

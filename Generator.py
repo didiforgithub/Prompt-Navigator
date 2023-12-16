@@ -16,6 +16,8 @@ class PromptGenerator:
             self.llm = OpenAILLM()
         elif model_series == "llama-7b":
             self.llm = Llama()
+        else:
+            self.llm = ErnieLLM()
 
     def generate(self, input_prompt, strategy="zero-shot cot"):
         if "few-shot" in strategy:

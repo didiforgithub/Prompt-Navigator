@@ -9,6 +9,8 @@ class Diversifier():
             self.llm = OpenAILLM()
         elif model_series == "llama-7b":
             self.llm = Llama()
+        else:
+            self.llm = ErnieLLM()
 
     def diversify(self, prime_data):
         '''

@@ -125,7 +125,7 @@ with tab2:
         user_input = st.text_area("Your Prompt", height=130)
     with c2:
         selected_llm = st.selectbox(
-            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "llama-7b"]
+            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "llama-7b", "chatglm-6b", "qwen-14b"]
         )
         session_state.llm_choice = selected_llm
         selected_strategys = st.multiselect(

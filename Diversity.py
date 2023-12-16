@@ -21,10 +21,12 @@ class Diversifier():
         你是一个优秀的数据生成者，你擅长根据当前的数据，去随机生成彼此间毫不相关的新数据。
         以下是目前有的原数据
         prime_data:"{prime_data}"
-        请你根据prime_data随机生成example，example和原问题没有任何关系，example彼此之间也没有任何关系。请记得将结果写在python格式的列表里[example1, example2, ...]
+        请你根据prime_data随机生成3个example，example和原问题没有任何关系，example彼此之间也没有任何关系。请记得将结果写在python格式的列表里[example1, example2, ...]
         """
         response = self.llm.response(diversify_prompt)
+        print(response)
         examples = ast.literal_eval("[" + response.split("[")[-1].split("]")[0] + "]")
+        print(examples)
         return examples
 
 if __name__ == "__main__":

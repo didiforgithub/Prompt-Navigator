@@ -19,11 +19,12 @@ if "generate_result_button" not in session_state:
     session_state.generate_result_button = False
 if "eval_button" not in session_state:
     session_state.eval_button = False
-if "general_eval_button" not in session_state:
-    session_state.general_eval_button = False
+if "general_evaluate_button" not in session_state:
+    session_state.general_evaluate_button = False
 if "modify_button" not in session_state:
     session_state.modify_button = False
 
+print(f"状态：{session_state.general_evaluate_button}")
 
 def click_prompt_generate_button():
     session_state.prompt_generate_button = True
@@ -37,8 +38,8 @@ def click_eval_button():
     session_state.eval_button = True
 
 
-def click_general_eval_button():
-    session_state.general_eval_button = True
+def click_general_evaluate_button():
+    session_state.general_evaluate_button = True
 
 
 def click_modify_button():
@@ -77,8 +78,8 @@ def result_llm_response(input_text, llm_choice):
 @st.cache(suppress_st_warning=True)
 def eval_response(eval_example, llm_choice, answer_dict):
     evaluator = Evaluator(llm_choice)
-    eval_result = evaluator.evaluate(eval_example, answer_dict)
-    return eval_result
+    eval_result_in = evaluator.evaluate(eval_example, answer_dict)
+    return eval_result_in
 
 
 @st.cache(suppress_st_warning=True)
@@ -87,30 +88,34 @@ def general_eval_response(usr_input, eval_example_in, llm_choice):
     diver = Diversifier()
     questions = diver.diversify(eval_example_in)
     # 配置一个字典，用于存储策略与问题的均分
-    general_eval_dict = {}
-    general_eval_dict["origin result"] = []
+    general_eval_dict = {"origin result": []}
     for strategy in selected_strategys:
         general_eval_dict[strategy] = []
     # 分解列表，逐个生成回复
     for que in questions:
         # 调用llm result 生成回复
         current_result = {}
-        for x in general_eval_dict.keys():
+        for num, x in enumerate(general_eval_dict.keys()):
             if x == "origin result":
                 current_result[x] = result_llm_response(usr_input + "\n" + que, llm_choice)
             else:
-                current_result[x] = result_llm_response(session_state.response_result[i - 1] + "\n" + que, llm_choice)
+                current_result[x] = result_llm_response(session_state.response_result[num - 1] + "\n" + que, llm_choice)
         # 调用evaluator，生成分数
         current_score_dict = eval_response(que, llm_choice, current_result)
         # 读取current_score_dict，将分数append到general_eval_dict对应的列表中
         for x in general_eval_dict.keys():
-            general_eval_dict[x].append(current_score_dict[x][0])
+            try:
+                general_eval_dict[x].append(int(current_score_dict[x][0]))
+            except Exception as e:
+                print(f"出现转换错误{e}")
+                general_eval_dict[x].append(80)
     # 计算general_eval_dict中的均分
     for x in general_eval_dict.keys():
         general_eval_dict[x] = sum(general_eval_dict[x]) / len(general_eval_dict[x])
 
     return general_eval_dict
     # 返回一个字典，键为策略，值为均分，如何跟那边对齐？
+
 
 @st.cache(suppress_st_warning=True)
 def modify_response(reserve_in, delete_in, add_in):
@@ -149,7 +154,8 @@ with tab1:
     # Prompt Strategies
     ## single-stage
     ### COT
-    [COT（Chain of Thought）](https://arxiv.org/abs/2201.11903)，是一种通过引导大模型逐步思考，输出中间推理过程而不是直接给出回答，增强LLM推理准确性的prompt策略。对于decode-only结构的的LLM，其被COT引导输出的中间推理步骤会不断地被计算attention，对后续的生成产生增强作用。由于COT和GPT在设计原理上的高度契合，使得COT几乎成为如今最常用的prompt策略。
+    [COT（Chain of Thought）](https://arxiv.org/abs/2201.11903)，是一种通过引导大模型逐步思考，输出中间推理过程而不是直接给出回答，增强LLM推理准确性的prompt策略。
+    对于decode-only结构的的LLM，其被COT引导输出的中间推理步骤会不断地被计算attention，对后续的生成产生增强作用。由于COT和GPT在设计原理上的高度契合，使得COT几乎成为如今最常用的prompt策略。
     ### Contrastive
     [Contrastive](https://arxiv.org/abs/2106.06823)，是一种通过对比增强LLM推理质量的prompt策略，本项目将原论文的设计泛化到任意场景，让LLM针对原问题提出几种错误解法，并且沿着错误的解法推理下去得到错误的中间步骤结果，让LLM在真正解决问题时基于对比给出准确且优质的解法。
     ### Difficulty
@@ -194,7 +200,7 @@ with tab3:
     with medium:
         st.button("Eval", on_click=click_eval_button)
     with right:
-        st.button("General Eval", on_click=click_general_eval_button())
+        st.button("General Eval", on_click=click_general_evaluate_button)
 
     if session_state.generate_result_button:
         eval_columns = st.columns(len(selected_strategys) + 1)
@@ -227,13 +233,17 @@ with tab3:
                              value=list(eval_result.values())[i][0] + "\n" + list(eval_result.values())[i][1],
                              height=200)
 
-    if session_state.general_eval_button:
-        general_eval_result = general_eval_response(user_input, eval_example_input, session_state.llm_choice)
+    if session_state.general_evaluate_button:
+        print(f'当前状态：{session_state.general_evaluate_button}')
+        print(session_state.llm_choice)
+        curr_llm = session_state.llm_choice
+        general_eval_result = general_eval_response(user_input, eval_example_input, curr_llm)
         general_eval_result_colnums = len(general_eval_result)
-        for i, col in enumerate(general_eval_result_colnums):
+        general_eval_cols = st.columns(general_eval_result_colnums)
+        for i, col in enumerate(general_eval_cols):
             with col:
-                st.text_area(label=general_eval_result.keys()[i],
-                             value=general_eval_result.values()[i],
+                st.text_area(label=list(general_eval_result.keys())[i],
+                             value=list(general_eval_result.values())[i],
                              height=200)
 
 with tab4:

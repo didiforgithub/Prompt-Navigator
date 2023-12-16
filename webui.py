@@ -17,10 +17,11 @@ for button in button_list:
     if button not in session_state:
         session_state[button] = False
 
+for button in button_list:
+    print(session_state[button])
 
 def click_prompt_generate_button():
     session_state.prompt_generate_button = True
-
 
 def click_generate_result_button():
     session_state.generate_result_button = True
@@ -61,7 +62,7 @@ with tab2:
             "Strategy:", ["zero-shot cot", "few-shot cot", "zero-shot contrastive"]
         )
         st.write('num:', len(selected_strategys))
-    st.button("生成响应", on_click=click_prompt_generate_button())
+    st.button("生成响应", on_click=click_prompt_generate_button)
     if session_state.prompt_generate_button:
         prompt_generator = PromptGenerator()
         for strategy in selected_strategys:
@@ -81,7 +82,7 @@ with tab2:
 with tab3:
     st.title('Evaluation Different prompt generation strategies')
     eval_example_input = st.text_area("Example", height=100)
-    st.button("Generate Result", on_click=click_generate_result_button())
+    st.button("Generate Result", on_click=click_generate_result_button)
     if session_state.generate_result_button:
         eval_llm = ErnieLLM()
         eval_columns = st.columns(len(selected_strategys) + 1)
@@ -101,7 +102,7 @@ with tab3:
                         height=200
                     )
                     session_state.answer_dict[selected_strategys[i - 1]] = generate_result
-    st.button("Eval", on_click=click_eval_button())
+    st.button("Eval", on_click=click_eval_button)
     if session_state.eval_button:
         evaluator = Evaluator()
         eval_result = evaluator.evaluate(eval_example_input, session_state.answer_dict)
@@ -120,7 +121,7 @@ with tab4:
     with c3:
         add_input = st.text_area(label="add", value="add", height=50)
 
-    st.button("生成修改结果", on_click=click_modify_button())
+    st.button("生成修改结果", on_click=click_modify_button)
     if session_state.modify_button:
         modify_block = Modify()
         modified_result = modify_block.GetModifyResult(

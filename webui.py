@@ -125,7 +125,7 @@ with tab2:
         user_input = st.text_area("Your Prompt", height=130)
     with c2:
         selected_llm = st.selectbox(
-            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "llama-7b"]
+            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "baichuan-13b", "llama-7b", "mixtral-8x7b moe", "qwen-14b", "chatglm-6b"]
         )
         session_state.llm_choice = selected_llm
         selected_strategys = st.multiselect(
@@ -177,9 +177,13 @@ with tab3:
 
     if session_state.eval_button:
         eval_result = eval_response(eval_example_input, session_state.llm_choice, session_state.answer_dict)
-        for x, y in eval_result.items():
-            st.write(x, y)
-        st.write(eval_result)
+        # TODO 按照列数量添加
+        eval_result_colnums = len(eval_result)
+        eval_result_cols = st.columns(eval_result_colnums)
+        for i, col in enumerate(eval_result_cols):
+            with col:
+                st.header(list(eval_result.keys())[i])
+                st.write(list(eval_result.values())[i])
 
 with tab4:
     input_col_nums = 3

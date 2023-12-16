@@ -57,9 +57,6 @@ class Modify:
 if __name__ == "__main__":
     test_chat = ErnieLLM()
     import erniebot
-    erniebot.api_type = 'aistudio'
-    erniebot.access_token = '547074bb00884c1ad2a5c2c548e8afa23c9c3453'
-
 
     modify_block = Modify()
     modify_guide = "增加一个要求：如果是在面对连续除法的时候，请先算前面的除法，得到结果之后再算后面的除法。"

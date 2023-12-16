@@ -12,7 +12,7 @@ class Diversifier():
 
     def diversify(self, prime_data):
         '''
-        return:list 多哦样
+        return:list 多样化的数据
         '''
         # 对于已有的数据，利用大模型的能力，生成更多样化的数据
         diversify_prompt = f"""

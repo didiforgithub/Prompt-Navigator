@@ -5,122 +5,78 @@ from LLM import ErnieLLM
 class Modify:
     def __init__(self):
         self.llm = ErnieLLM()
-        self.prompt_message = [
-            {
-                "role": "user",
-                "content": "现在，你将成为一个高效的信息整合器。\
-                    我将向你提供一些重要的信息片段，并明确告诉你哪些信息是不允许包含在内的。\
-                    你的任务是将这些重要信息巧妙地融合到一段流畅且连贯的话语中，同时确保所有不应出现的信息都被排除在外。\
-                    请确保最终输出的信息完全符合我的要求，既包含所有重要的点，又避开了指定的禁区。\
-                    最终，你应该返回一个如下json。注意标点应为英文格式。:\
-                    \{\
-                        \"result\": \"你整合之后的结果\",\
-                    \}\
-                    同时，你可以对你合并之后的结果进行分条和整理，让其更有条理性。"
-            },
-            {
-                'role': 'assistant',
-                'content': "好的，请提供需要整合的信息片段，以及需要避开的信息片段，我会尽力帮助您。"
-            }
-        ]
 
-    def ConvertToDict(self, dict_str):
-        # 直接尝试能否转成dict
+    def CombineInfo(self, Strategy_Prompt):
+        s = str()
+        i = 0
+        for value in Strategy_Prompt.values():
+            i += 1
+            s += f"第{i}段话：\n{value}\n"
+        return s
+    
+    def GetJsonResult(self, response):
+        start = response.find("{")
+        end = response.rfind("}")
+        response_dictstr = response[start : end+1]
+
         try:
-            eval(dict_str)
-
-        # 不能的话 删除首尾两行
+            return eval(response_dictstr)['result']
         except:
-            try:
-                start = dict_str.find("{")
-                end = dict_str.rfind("}")
-                dict_str = dict_str[start: end+1]
-                eval(dict_str)
-            except:
-                return dict_str
-        return dict_str
-
-    def GetModifyResult(self, reserve = "", delete = "", add = ""):
-        response_message = {"role" : 'assistant', 'content' : None}
-        prompt_message = copy.deepcopy(self.prompt_message)
-
-        ## 保留信息1
-        if len(reserve) != 0:
-            prompt_message.append({
-                "role": "user", 
-                "content": "好的，要整合的信息片段是:\n{}\n\
-                            以上就是你需要整合的信息片段。\
-                            请你不要改变上述信息中的人称。例如我在上述信息片段中用的第二人称，你给我返回的整合信息中也应该是第二人称。\
-                            同时你可以适度地发挥创造性，通过调整语序等方式，使整合后的内容不仅没有缺失任何信息，同时前后因果逻辑流畅。\
-                            请你直接以定义好的dict返回给我你整合之后的结果，切勿做多余的解释和任何形式的说明。".format(reserve)
-            })
-            response_str = self.llm.multiple_messages_response(prompt_message)
-            response_message['content'] = self.ConvertToDict(response_str)
-            prompt_message.append(response_message)
-            print(response_message['content'])
+            return response
 
 
-        ## 增添信息
-        if len(add) != 0:
-            prompt_message.append({
-                "role": "user", 
-                "content": "好的，你已经完成了第一阶段的整合。接下来，我会再给你一段补充信息，请你补充到上述信息中。\
-                            补充信息为：\n{}\n\
-                            以上就是你需要补充的信息片段。\
-                            你补充后的内容不应该缺失任何信息，同时因果逻辑流畅。\
-                            请你直接以定义好的dict返回给我你整合之后的结果，切勿做多余的解释和任何形式的说明。".format(add)
-                })
-            response_str = self.llm.multiple_messages_response(prompt_message)
-            response_message['content'] = self.ConvertToDict(response_str)
-            prompt_message.append(response_message)
-            print(response_message['content'])
-        
+    def GetModifiedResult(self, Strategy_Prompt, modify_guide):
+        CombinedInfo = self.CombineInfo(Strategy_Prompt)
+        initial_message = {
+            "role":"user", 
+            "content":"请你为我将以下{}段话的信息整合一下：\
+                      \n{}\n\
+                      以上就是你要整合{}段信息。请你将上述信用通顺的语言重新组织，然后返回给我。\
+                      整合后的信息应该前后因果关系顺畅。\
+                      你可以调换句子顺序，但你不能改变语言风格或者省略信息。\
+                    ".format(len(Strategy_Prompt), CombinedInfo, len(Strategy_Prompt))
+        }
 
-        ## 删除信息
-        if len(delete) != 0:
-            prompt_message.append({
-                "role": "user", 
-                "content": 
-                    "好的，现在我需要你从以上信息中剔除下列信息。\
-                    需要剔除的信息为:\n{}\n\
-                    以上就是你需要剔除的信息片段。\
-                    注意，与需要剔除的信息含义类似的信息也需要被剔除。而未提及的信息务必全部保留，如无必要无需对这类信息进行增减和修改。\
-                    请你直接以定义好的dict返回给我你剔除之后的结果，切勿做多余的解释和任何形式的说明。".format(delete)
-                })
-            response_str = self.llm.multiple_messages_response(prompt_message)
-            response_message['content'] = self.ConvertToDict(response_str)
-            prompt_message.append(response_message)
-            print(response_message['content'])
-        
+        model_reply = {
+            "role":"assistant", 
+            "content":"好的，我明白了，我稍后会为你整合信息。请问还有其他要求吗？\
+                    ".format(len(Strategy_Prompt), CombinedInfo, len(Strategy_Prompt))
+        }
 
-        ## 分条和整合信息
-        if response_message['content'] != None:
-            prompt_message = copy.deepcopy(self.prompt_message)
-            prompt_message.append(
-                {
-                    "role": "user", 
-                    "content": "下述信息进行整理和分条，给出分条的序号和信息。\
-                                如1.重要信息一。2.重要信息二......\
-                                请你直接以定义好的dict返回给我整理之后结果，字典中result的结果应该是一个字符串。\
-                                需要整理和粉条的信息是：{}".format(response_message['content'])
-                }
-            )
-            response_str = self.llm.multiple_messages_response(prompt_message)
-            response_message['content'] = self.ConvertToDict(response_str)
-            prompt_message.append(response_message)
-            print(response_message['content'])
-        return eval(response_message['content'])['result']
+        additional_guide = {
+            "role":"user", 
+            "content": "{}\n".format(modify_guide) + "接下来，请你结合上述所有信息和要求，以{\"result\": 整合后的结果}的格式返回整合后的结果。"
+        }
+        prompt_messages = [initial_message, model_reply, additional_guide]
+
+        response = self.llm.multiple_messages_response(messages = prompt_messages)
+        return self.GetJsonResult(response)
 
 
 
 if __name__ == "__main__":
+    test_chat = ErnieLLM()
+    import erniebot
+    erniebot.api_type = 'aistudio'
+    erniebot.access_token = '547074bb00884c1ad2a5c2c548e8afa23c9c3453'
+
+
     modify_block = Modify()
-    modified_prompt = modify_block.GetModifyResult(
-        reserve="你的回答不仅要正确无误，还要深入浅出，易于理解，即便是最复杂的数学概念也要能够娓娓道来，让任何没有数学背景的人都能够一听就懂。\n\
-                你现在是一位伟大的数学家，拥有深不可测的智慧和破解任何数学难题的能力。\n\
-                你可以引用历史上的数学成就。",
-        delete="你可以引用历史上的数学成就，或者提出全新的观点或方法论。同时，你所提供的解决方案要创新，能够启发思考，甚至可能引领数学领域的新发展。\n\
-                让任何没有数学背景的人都能够一听就懂。",
-        add="对于四则运算之类的题目，请你根据先乘除后加减的顺序，逐步计算，得到最终的结果。你的计算过程需要有所体现。"
-    )
-    print(modified_prompt)
+    modify_guide = "增加一个要求：如果是在面对连续除法的时候，请先算前面的除法，得到结果之后再算后面的除法。"
+    Strategy_Prompt = {
+    's1' : '你是一个数学大师，擅长解决各种复杂的数学问题。\
+    在你面对一个数学问题时，你会首先分析问题的难点所在，然后运用你的专业知识和技能来解决问题。\
+    例如，当面对一个复杂的微积分问题时，你会注意到其中的难点可能包括复杂的函数形式、多变的变量和需要巧妙运用的微积分规则。\
+    请你在解决这类问题时，特别留意这些难点，并运用你的数学技巧来给出准确的解答。',
+    's2' : '你是一个数学大师，善于将复杂的问题拆解成简单的步骤。当你面对一个数学难题时，你会首先理解问题的本质，然后将其拆分成一个个可以解决的子问题，并逐一解决。\
+    最后，你会将子问题的解决方案组合起来，得到原问题的答案。\n\
+    现在，请你利用这种分步骤解决问题的方法，帮我解决以下的数学问题：\n\
+    [具体的数学问题]\n\
+    首先，请你理解这个问题的本质是什么？\n\
+    然后，请你将这个问题拆分成哪些可以解决的子问题？\n\
+    接着，请你逐一解决这些子问题，并给出每一步的详细推导过程。\n\
+    最后，请你将子问题的解决方案组合起来，得到原问题的答案。'
+    }
+    response = modify_block.GetModifiedResult(Strategy_Prompt = Strategy_Prompt,
+                                            modify_guide = modify_guide)
+    print(response)

@@ -46,7 +46,7 @@ class Evaluator:
 
 
 if __name__ == "__main__":
-    evaluator = Evaluator()
+    evaluator = Evaluator() 
     question0 = "有若干只鸡兔同在一个笼子里，从上面数，有35个头，从下面数，有94只脚。问笼中各有多少只鸡和兔？"
     answer_dict0 = {
         "zero-shot cot":

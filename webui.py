@@ -13,11 +13,15 @@ if 'answer_dict' not in session_state:
     session_state.answer_dict = {}
 if 'llm_choice' not in session_state:
     session_state.llm_choice = "ernie-bot-4"
-button_list = ["prompt_generate_button", "generate_result_button", "eval_button","modify_button"]
+if "prompt_generate_button" not in session_state:
+    session_state.prompt_generate_button = False
+if "generate_result_button" not in session_state:
+    session_state.generate_result_button = False
+if "eval_button" not in session_state:
+    session_state.eval_button = False
+if "modify_button" not in session_state:
+    session_state.modify_button = False
 
-for button in button_list:
-    if button not in session_state:
-        session_state[button] = False
 
 def click_prompt_generate_button():
     session_state.prompt_generate_button = True
@@ -34,16 +38,39 @@ def click_eval_button():
 def click_modify_button():
     session_state.modify_button = True
 
+@st.cache(suppress_st_warning=True)
+def prompt_generate(user_in, selected_strategies):
+    prompt_generator = PromptGenerator(session_state.llm_choice)
+    for strategy in selected_strategies:
+        response = prompt_generator.generate(user_in, strategy)
+        session_state.response_result.append(response)
 
 @st.cache(suppress_st_warning=True)
-def eval_llm_response(input_text, llm_choice):
+def generate_result(user_in, selected_strategies):
+    prompt_generator = PromptGenerator(session_state.llm_choice)
+    for strategy in selected_strategies:
+        response = prompt_generator.generate(user_in, strategy)
+        session_state.response_result.append(response)
+
+
+@st.cache(suppress_st_warning=True)
+def result_llm_response(input_text, llm_choice):
     if llm_choice == "ernie-bot-4":
         eval_llm = ErnieLLM()
     elif llm_choice == "gpt-3.5-turbo":
         eval_llm = OpenAILLM()
     elif llm_choice == "llama-7b":
         eval_llm = Llama()
+    else:
+        eval_llm = ErnieLLM()
     return eval_llm.response(input_text)
+
+
+@st.cache(suppress_st_warning=True)
+def eval_response(eval_example,llm_choice,answer_dict):
+    evaluator = Evaluator(llm_choice)
+    eval_result = evaluator.evaluate(eval_example, answer_dict)
+    return eval_result
 
 
 @st.cache(suppress_st_warning=True)
@@ -55,6 +82,7 @@ def modify_response(reserve_in, delete_in, add_in):
         add=add_in
     )
     return modified_result
+
 
 
 # 设置全局属性
@@ -90,10 +118,7 @@ with tab2:
         )
     st.button("生成响应", on_click=click_prompt_generate_button)
     if session_state.prompt_generate_button:
-        prompt_generator = PromptGenerator(session_state.llm_choice)
-        for strategy in selected_strategys:
-            response = prompt_generator.generate(user_input, strategy)
-            session_state.response_result.append(response)
+        prompt_generate(user_input, selected_strategys)
         columns = st.columns(len(selected_strategys) + 1)
         for i, col in enumerate(columns):
             with col:
@@ -115,12 +140,12 @@ with tab3:
             with col:
                 if i == 0:
                     st.header("origin result")
-                    generate_result = eval_llm_response(user_input + "\n" + eval_example_input, session_state.llm_choice )
+                    generate_result = result_llm_response(user_input + "\n" + eval_example_input, session_state.llm_choice )
                     st.text_area(label="origin result", value=generate_result, height=200)
                     session_state.answer_dict["origin result"] = generate_result
                 else:
                     st.header(selected_strategys[i - 1])
-                    generate_result = eval_llm_response(
+                    generate_result = result_llm_response(
                         session_state.response_result[i - 1] + "\n" + eval_example_input, session_state.llm_choice )
                     st.text_area(
                         label=selected_strategys[i - 1],
@@ -131,8 +156,7 @@ with tab3:
 
     st.button("Eval", on_click=click_eval_button)
     if session_state.eval_button:
-        evaluator = Evaluator(session_state.llm_choice)
-        eval_result = evaluator.evaluate(eval_example_input, session_state.answer_dict)
+        eval_result = eval_response(eval_example_input, session_state.llm_choice, session_state.answer_dict)
         for x, y in eval_result.items():
             st.write(x, y)
         st.write(eval_result)

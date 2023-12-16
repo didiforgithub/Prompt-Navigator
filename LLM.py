@@ -47,7 +47,7 @@ class ErnieLLM:
     def multiple_messages_response(self, messages, system=""):
         for i in range(self.retries):
             try:
-                time.sleep(0.5)
+                time.sleep(1)
                 response_content = erniebot.ChatCompletion.create(
                     model=self.model_name,
                     messages=messages,
@@ -55,7 +55,7 @@ class ErnieLLM:
                 )
                 return response_content.get_result()
             except Exception as e:
-                print(f"{__name__} occurs: {e}")
+                print(e)
 
 
 class OpenAILLM():

@@ -1,5 +1,5 @@
 import re
-from ErnieLLM import ErnieLLM
+from LLM import ErnieLLM, OpenAILLM, Llama
 
 
 def extract_dict(text):
@@ -13,8 +13,13 @@ def extract_dict(text):
 
 
 class Evaluator:
-    def __init__(self):
-        self.llm = ErnieLLM()
+    def __init__(self, model_series="ernie-bot-4"):
+        if model_series == "ernie-bot-4":
+            self.llm = ErnieLLM()
+        elif model_series == "gpt-3.5-turbo":
+            self.llm = OpenAILLM()
+        elif model_series == "llama-7b":
+            self.llm = Llama()
 
     def evaluate(self, question, answer_dict):
         # 输入进来一个Dict，给一个相同Dict的输出，以百分制
@@ -41,14 +46,13 @@ class Evaluator:
         eval_result = extract_dict(self.llm.response(evaluate_prompt))
         return eval_result
 
+
 if __name__ == "__main__":
     evaluator = Evaluator()
     question = "有若干只鸡兔同在一个笼子里，从上面数，有35个头，从下面数，有94只脚。问笼中各有多少只鸡和兔？"
     answer_dict = {}
-    result = evaluator.evaluate(question,answer_dict)
+    result = evaluator.evaluate(question, answer_dict)
     print(result)
     print(extract_dict(result))
     for i in extract_dict(result):
         print(i)
-
-

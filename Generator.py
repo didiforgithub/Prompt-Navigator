@@ -27,7 +27,7 @@ class PromptGenerator:
                 origin-prompt:{input_prompt}
                 请你联想另一个同类型的”问题-答案“对，对这个任务进行cot拆解分析并且给出完整推理过程（包括答案），在最后返回你设计的cot example，格式如下：
                 {"{"}
-                    'few_shot_example': '你的few_shot_example',
+                    'few_shot_example': '''你的few_shot_example''',
                 {"}"}
                 注意，你的few_shot_example里不能涉及原问题。
                 """
@@ -45,7 +45,7 @@ class PromptGenerator:
                 origin-prompt:{input_prompt}
                 请你联想另一个同类型的”问题-答案“对，对这个任务设计一些contrastive错误推理示范并给出答案，请把你设计的contrastive example写进如下的格式中：
                 {"{"}
-                    'few_shot_example': '你的few_shot_example',
+                    'few_shot_example': '''你的few_shot_example''',
                 {"}"}
                 注意，你的few_shot_example里不能涉及原问题。
                 """
@@ -64,7 +64,7 @@ class PromptGenerator:
                 origin-prompt:{input_prompt}
                 请你联想另一个同类型的”问题-答案“对，对这个任务进行难点抽取分析并给出答案，请把你设计的difficulty example写进如下的格式中：
                 {"{"}
-                    'few_shot_example': '你的few_shot_example',
+                    'few_shot_example': '''你的few_shot_example''',
                 {"}"}
                 注意，你的few_shot_example里不能涉及原问题。
                 """
@@ -79,7 +79,7 @@ class PromptGenerator:
             origin-prompt:{input_prompt}
             请你分析你的设计思路，在最后返回你润色后的zero-shot cot prompt，格式如下：
             {"{"}
-                'new_prompt': '你的zero-shot cot prompt',
+                'new_prompt': '''你的zero-shot cot prompt''',
             {"}"}
             """
         elif "contrastive" in strategy:
@@ -96,7 +96,7 @@ class PromptGenerator:
             origin-prompt:{input_prompt}
             请你分析你的设计思路，在最后返回你润色后的contrastive prompt，格式如下：
             {"{"}
-                'new_prompt': '你的contrastive prompt' ,
+                'new_prompt': '''你的contrastive prompt''' ,
             {"}"}
             """
         elif "difficulty" in strategy:
@@ -114,26 +114,38 @@ class PromptGenerator:
             origin-prompt:{input_prompt}
             请你分析你的设计思路，在最后返回你润色后的difficulty prompt，格式如下：
             {"{"}
-                'new_prompt': '你的difficulty prompt' ,
+                'new_prompt': '''你的difficulty prompt''' ,
             {"}"}
             """
         prompt = self.llm.response(prompt_prompt)
         prompt = ast.literal_eval("{" + prompt.split("{")[-1].split("}")[0] + "}")
         prompt = list(prompt.values())[0]
         if "few-shot" in strategy:
-            prompt = f"以下是一些推理样例，你可以在后续的推理过程中借鉴：\n{few_shot}\n" + f"请你借鉴以上样例，推理解答下列问题：\n{prompt}\n" 
+            prompt = f"以下是一些推理样例，你可以在后续的推理过程中借鉴：\n{few_shot}\n" + f"请你借鉴以上样例，对下列内容进行思考：\n{prompt}\n" 
         return prompt
 
 
 if __name__ == "__main__":
     prompt_generator = PromptGenerator()
-    # print(prompt_generator.generate("如果我和我名义上的妈妈没有血缘关系，那么我妈妈有没有可能不是我外婆的女儿？", "zero-shot cot"))
     # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "zero-shot cot"))
     # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "zero-shot contrastive"))
     # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "zero-shot difficulty"))
 
-    print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot cot"))
+    # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot cot"))
+    # print("***************")
+    # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot contrastive"))
+    # print("***************")
+    # print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot difficulty"))
+
+    print(prompt_generator.generate("你是一个数学大师", "zero-shot cot"))
     print("***************")
-    print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot contrastive"))
+    print(prompt_generator.generate("你是一个数学大师", "zero-shot contrastive"))
     print("***************")
-    print(prompt_generator.generate("鸡兔同笼，头共35个，脚共94只，求鸡与兔各有多少个头？", "few-shot difficulty"))
+    print(prompt_generator.generate("你是一个数学大师", "zero-shot difficulty"))
+    print("***************")
+
+    print(prompt_generator.generate("你是一个数学大师", "few-shot cot"))
+    print("***************")
+    print(prompt_generator.generate("你是一个数学大师", "few-shot contrastive"))
+    print("***************")
+    print(prompt_generator.generate("你是一个数学大师", "few-shot difficulty"))

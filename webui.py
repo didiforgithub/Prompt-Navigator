@@ -230,7 +230,7 @@ with tab3:
         for i, col in enumerate(eval_result_cols):
             with col:
                 st.text_area(label="eval result",
-                             value=list(eval_result.values())[i][0] + "\n" + list(eval_result.values())[i][1],
+                             value=str(list(eval_result.values())[i][0]) + "\n" + str(list(eval_result.values())[i][1]),
                              height=200)
 
     if session_state.general_evaluate_button:

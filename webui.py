@@ -1,9 +1,8 @@
 import streamlit as st
 from Generator import PromptGenerator
-from LLM import ErnieLLM,OpenAILLM,Llama
+from LLM import ErnieLLM, OpenAILLM, Llama
 from Modifier import Modify
 from Evaluator import Evaluator
-from streamlit_chat import message
 
 # 定义相关Session State
 session_state = st.session_state
@@ -38,12 +37,14 @@ def click_eval_button():
 def click_modify_button():
     session_state.modify_button = True
 
+
 @st.cache(suppress_st_warning=True)
 def prompt_generate(user_in, selected_strategies):
     prompt_generator = PromptGenerator(session_state.llm_choice)
     for strategy in selected_strategies:
         response = prompt_generator.generate(user_in, strategy)
         session_state.response_result.append(response)
+
 
 @st.cache(suppress_st_warning=True)
 def generate_result(user_in, selected_strategies):
@@ -67,7 +68,7 @@ def result_llm_response(input_text, llm_choice):
 
 
 @st.cache(suppress_st_warning=True)
-def eval_response(eval_example,llm_choice,answer_dict):
+def eval_response(eval_example, llm_choice, answer_dict):
     evaluator = Evaluator(llm_choice)
     eval_result = evaluator.evaluate(eval_example, answer_dict)
     return eval_result
@@ -84,23 +85,38 @@ def modify_response(reserve_in, delete_in, add_in):
     return modified_result
 
 
-
 # 设置全局属性
 st.set_page_config(
-    page_title='Streamlit Demo',
+    page_title='Prompt Navigator',
     page_icon='',
     layout='wide'
 )
 
-st.title('Streamlit Demo ⚡')
+st.markdown(
+    """
+    <style>
+    .stButton>button {
+        width: 100%;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title('Prompt Navigator ⚡')
 tab1, tab2, tab3, tab4 = st.tabs(['Introduction', 'Prompt Generate', 'Evaluation', 'Modify'])
 
 with tab1:
-    '''
-    ```text
-    项目介绍与各种策略介绍
-    ```
-    '''
+    st.markdown("""
+    # Prompt Strategies
+    ## single-stage
+    ### COT
+    [COT（Chain of Thought）](https://arxiv.org/abs/2201.11903)，是一种通过引导大模型逐步思考，输出中间推理过程而不是直接给出回答，增强LLM推理准确性的prompt策略。对于decode-only结构的的LLM，其被COT引导输出的中间推理步骤会不断地被计算attention，对后续的生成产生增强作用。由于COT和GPT在设计原理上的高度契合，使得COT几乎成为如今最常用的prompt策略。
+    ### Contrastive
+    [Contrastive](https://arxiv.org/abs/2106.06823)，是一种通过对比增强LLM推理质量的prompt策略，本项目将原论文的设计泛化到任意场景，让LLM针对原问题提出几种错误解法，并且沿着错误的解法推理下去得到错误的中间步骤结果，让LLM在真正解决问题时基于对比给出准确且优质的解法。
+    ### Difficulty
+    Difficulty，是一种通过增加额外说明增强LLM推理过程权重的prompt策略，本项目将其定义为对于推理的难点预判，从而引导LLM在推理过程中给予难点部分高权重来精细推理过程。
+    """)
 
 with tab2:
     origin_cols_num = 2
@@ -116,7 +132,7 @@ with tab2:
             "Strategy:", ["zero-shot cot", "zero-shot contrastive", "zero-shot difficulty", "few-shot cot",
                           "few-shot contrastive", "few-shot difficulty"]
         )
-    st.button("生成响应", on_click=click_prompt_generate_button)
+    st.button("Prompt Generate", on_click=click_prompt_generate_button)
     if session_state.prompt_generate_button:
         prompt_generate(user_input, selected_strategys)
         columns = st.columns(len(selected_strategys) + 1)
@@ -132,21 +148,26 @@ with tab2:
 
 with tab3:
     st.title('Evaluation Different prompt generation strategies')
-    eval_example_input = st.text_area("Example", height=100)
-    st.button("Generate Result", on_click=click_generate_result_button)
+    eval_example_input = st.text_area("Your Question", height=100)
+    left, right = st.columns(2)
+    with left:
+        st.button("Generate Result", on_click=click_generate_result_button)
+    with right:
+        st.button("Eval", on_click=click_eval_button)
     if session_state.generate_result_button:
         eval_columns = st.columns(len(selected_strategys) + 1)
         for i, col in enumerate(eval_columns):
             with col:
                 if i == 0:
                     st.header("origin result")
-                    generate_result = result_llm_response(user_input + "\n" + eval_example_input, session_state.llm_choice )
+                    generate_result = result_llm_response(user_input + "\n" + eval_example_input,
+                                                          session_state.llm_choice)
                     st.text_area(label="origin result", value=generate_result, height=200)
                     session_state.answer_dict["origin result"] = generate_result
                 else:
                     st.header(selected_strategys[i - 1])
                     generate_result = result_llm_response(
-                        session_state.response_result[i - 1] + "\n" + eval_example_input, session_state.llm_choice )
+                        session_state.response_result[i - 1] + "\n" + eval_example_input, session_state.llm_choice)
                     st.text_area(
                         label=selected_strategys[i - 1],
                         value=generate_result,
@@ -154,7 +175,6 @@ with tab3:
                     )
                     session_state.answer_dict[selected_strategys[i - 1]] = generate_result
 
-    st.button("Eval", on_click=click_eval_button)
     if session_state.eval_button:
         eval_result = eval_response(eval_example_input, session_state.llm_choice, session_state.answer_dict)
         for x, y in eval_result.items():
@@ -165,20 +185,13 @@ with tab4:
     input_col_nums = 3
     c1, c2, c3 = st.columns(input_col_nums)
     with c1:
-        reserve_input = st.text_area(label="reserve", value="reserve", height=50)
+        reserve_input = st.text_area(label="Reserve", value="reserve", height=50)
     with c2:
-        delete_input = st.text_area(label="delete", value="delete", height=50)
+        delete_input = st.text_area(label="Delete", value="delete", height=50)
     with c3:
-        add_input = st.text_area(label="add", value="add", height=50)
+        add_input = st.text_area(label="Add", value="add", height=50)
 
-    st.button("生成修改结果", on_click=click_modify_button)
+    st.button("Modify", on_click=click_modify_button)
     if session_state.modify_button:
         modified_res = modify_response(reserve_input, delete_input, add_input)
         st.text_area(label="modified result", value=modified_res, height=50)
-
-    # message("Hello, I'm a chatbot!")  # 显示聊天消息
-    # message("How can I help you?", is_user=True)  # 将消息对齐到右侧
-    # placeholder = st.empty()  # 创建一个空白容器
-    # input_ = st.text_input("你：")  # 接收用户输入
-    # with placeholder.container():
-    #     message("我收到了你的消息：" + input_)

@@ -1,5 +1,4 @@
 from LLM import ErnieLLM, OpenAILLM, Llama
-import ast
 """
 这个部分的代码去写Generate部分，
 可以
@@ -71,7 +70,7 @@ class PromptGenerator:
                 注意，你的few_shot_example里不能涉及原问题。
                 """
             few_shot = self.llm.response(prompt_prompt)
-            few_shot = ast.literal_eval("{" + few_shot.split("{")[-1].split("}")[0] + "}")
+            few_shot = eval("{" + few_shot.split("{")[-1].split("}")[0] + "}")
             few_shot = list(few_shot.values())[0]
         if "cot" in strategy:
             prompt_prompt = f"""
@@ -120,7 +119,7 @@ class PromptGenerator:
             {"}"}
             """
         prompt = self.llm.response(prompt_prompt)
-        prompt = ast.literal_eval("{" + prompt.split("{")[-1].split("}")[0] + "}")
+        prompt = eval("{" + prompt.split("{")[-1].split("}")[0] + "}")
         prompt = list(prompt.values())[0]
         if "few-shot" in strategy:
             prompt = f"以下是一些推理样例，你可以在后续的推理过程中借鉴：\n{few_shot}\n" + f"请你借鉴以上样例，对下列内容进行思考：\n{prompt}\n" 

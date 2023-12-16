@@ -3,6 +3,7 @@ from Generator import PromptGenerator
 from LLM import ErnieLLM, OpenAILLM, Llama
 from Modifier import Modify
 from Evaluator import Evaluator
+from Diversity import Diversifier
 
 # 定义相关Session State
 session_state = st.session_state
@@ -18,6 +19,8 @@ if "generate_result_button" not in session_state:
     session_state.generate_result_button = False
 if "eval_button" not in session_state:
     session_state.eval_button = False
+if "general_eval_button" not in session_state:
+    session_state.general_eval_button = False
 if "modify_button" not in session_state:
     session_state.modify_button = False
 
@@ -32,6 +35,10 @@ def click_generate_result_button():
 
 def click_eval_button():
     session_state.eval_button = True
+
+
+def click_general_eval_button():
+    session_state.general_eval_button = True
 
 
 def click_modify_button():
@@ -73,6 +80,37 @@ def eval_response(eval_example, llm_choice, answer_dict):
     eval_result = evaluator.evaluate(eval_example, answer_dict)
     return eval_result
 
+
+@st.cache(suppress_st_warning=True)
+def general_eval_response(usr_input, eval_example_in, llm_choice):
+    # 调用diversity生成问题
+    diver = Diversifier()
+    questions = diver.diversify(eval_example_in)
+    # 配置一个字典，用于存储策略与问题的均分
+    general_eval_dict = {}
+    general_eval_dict["origin result"] = []
+    for strategy in selected_strategys:
+        general_eval_dict[strategy] = []
+    # 分解列表，逐个生成回复
+    for que in questions:
+        # 调用llm result 生成回复
+        current_result = {}
+        for x in general_eval_dict.keys():
+            if x == "origin result":
+                current_result[x] = result_llm_response(usr_input + "\n" + que, llm_choice)
+            else:
+                current_result[x] = result_llm_response(session_state.response_result[i - 1] + "\n" + que, llm_choice)
+        # 调用evaluator，生成分数
+        current_score_dict = eval_response(que, llm_choice, current_result)
+        # 读取current_score_dict，将分数append到general_eval_dict对应的列表中
+        for x in general_eval_dict.keys():
+            general_eval_dict[x].append(current_score_dict[x][0])
+    # 计算general_eval_dict中的均分
+    for x in general_eval_dict.keys():
+        general_eval_dict[x] = sum(general_eval_dict[x]) / len(general_eval_dict[x])
+
+    return general_eval_dict
+    # 返回一个字典，键为策略，值为均分，如何跟那边对齐？
 
 @st.cache(suppress_st_warning=True)
 def modify_response(reserve_in, delete_in, add_in):
@@ -125,7 +163,8 @@ with tab2:
         user_input = st.text_area("Your Prompt", height=130)
     with c2:
         selected_llm = st.selectbox(
-            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "baichuan-13b", "llama-7b", "mixtral-8x7b moe", "qwen-14b", "chatglm-6b"]
+            "LLM:",
+            ["ernie-bot-4", "gpt-3.5-turbo", "baichuan-13b", "llama-7b", "mixtral-8x7b moe", "qwen-14b", "chatglm-6b"]
         )
         session_state.llm_choice = selected_llm
         selected_strategys = st.multiselect(
@@ -147,13 +186,16 @@ with tab2:
                                  height=200)
 
 with tab3:
-    st.title('Evaluation Different prompt generation strategies')
+    st.title('Evaluation Different prompt generation strategy')
     eval_example_input = st.text_area("Your Question", height=100)
-    left, right = st.columns(2)
+    left, medium, right = st.columns(3)
     with left:
         st.button("Generate Result", on_click=click_generate_result_button)
-    with right:
+    with medium:
         st.button("Eval", on_click=click_eval_button)
+    with right:
+        st.button("General Eval", on_click=click_general_eval_button())
+
     if session_state.generate_result_button:
         eval_columns = st.columns(len(selected_strategys) + 1)
         for i, col in enumerate(eval_columns):
@@ -177,13 +219,22 @@ with tab3:
 
     if session_state.eval_button:
         eval_result = eval_response(eval_example_input, session_state.llm_choice, session_state.answer_dict)
-        # TODO 按照列数量添加
         eval_result_colnums = len(eval_result)
         eval_result_cols = st.columns(eval_result_colnums)
         for i, col in enumerate(eval_result_cols):
             with col:
-                st.header(list(eval_result.keys())[i])
-                st.write(list(eval_result.values())[i])
+                st.text_area(label="eval result",
+                             value=list(eval_result.values())[i][0] + "\n" + list(eval_result.values())[i][1],
+                             height=200)
+
+    if session_state.general_eval_button:
+        general_eval_result = general_eval_response(user_input, eval_example_input, session_state.llm_choice)
+        general_eval_result_colnums = len(general_eval_result)
+        for i, col in enumerate(general_eval_result_colnums):
+            with col:
+                st.text_area(label=general_eval_result.keys()[i],
+                             value=general_eval_result.values()[i],
+                             height=200)
 
 with tab4:
     input_col_nums = 3

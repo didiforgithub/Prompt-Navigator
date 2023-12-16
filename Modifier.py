@@ -1,5 +1,5 @@
 import copy
-from ErnieLLM import ErnieLLM
+from LLM import ErnieLLM
 
 
 class Modify:

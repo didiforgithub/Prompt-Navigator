@@ -1,4 +1,4 @@
-from ErnieLLM import ErnieLLM
+from LLM import ErnieLLM, OpenAILLM, Llama
 import ast
 """
 这个部分的代码去写Generate部分，
@@ -9,12 +9,13 @@ import ast
 
 class PromptGenerator:
 
-    def __init__(self, model_series="ernie"):
-        if model_series == "ernie":
+    def __init__(self, model_series="ernie-bot-4"):
+        if model_series == "ernie-bot-4":
             self.llm = ErnieLLM()
-        else:
-            # 这个部分是之后做LLM对比的时候改动的
-            self.llm = ErnieLLM()
+        elif model_series == "gpt-3.5-turbo":
+            self.llm = OpenAILLM()
+        elif model_series == "llama-7b":
+            self.llm = Llama()
 
     def generate(self, input_prompt, strategy="zero-shot cot"):
         if "few-shot" in strategy:

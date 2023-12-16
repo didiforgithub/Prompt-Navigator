@@ -1,6 +1,6 @@
 import streamlit as st
 from Generator import PromptGenerator
-from ErnieLLM import ErnieLLM
+from LLM import ErnieLLM,OpenAILLM,Llama
 from Modifier import Modify
 from Evaluator import Evaluator
 from streamlit_chat import message
@@ -11,12 +11,13 @@ if 'response_result' not in session_state:
     session_state.response_result = []
 if 'answer_dict' not in session_state:
     session_state.answer_dict = {}
-button_list = ["prompt_generate_button", "generate_result_button", "eval_button", "modify_button"]
+if 'llm_choice' not in session_state:
+    session_state.llm_choice = "ernie-bot-4"
+button_list = ["prompt_generate_button", "generate_result_button", "eval_button","modify_button"]
 
 for button in button_list:
     if button not in session_state:
         session_state[button] = False
-
 
 def click_prompt_generate_button():
     session_state.prompt_generate_button = True
@@ -32,6 +33,28 @@ def click_eval_button():
 
 def click_modify_button():
     session_state.modify_button = True
+
+
+@st.cache(suppress_st_warning=True)
+def eval_llm_response(input_text, llm_choice):
+    if llm_choice == "ernie-bot-4":
+        eval_llm = ErnieLLM()
+    elif llm_choice == "gpt-3.5-turbo":
+        eval_llm = OpenAILLM()
+    elif llm_choice == "llama-7b":
+        eval_llm = Llama()
+    return eval_llm.response(input_text)
+
+
+@st.cache(suppress_st_warning=True)
+def modify_response(reserve_in, delete_in, add_in):
+    modify_block = Modify()
+    modified_result = modify_block.GetModifyResult(
+        reserve=reserve_in,
+        delete=delete_in,
+        add=add_in
+    )
+    return modified_result
 
 
 # 设置全局属性
@@ -55,15 +78,19 @@ with tab2:
     origin_cols_num = 2
     c1, c2 = st.columns(origin_cols_num)
     with c1:
-        user_input = st.text_area("Your Prompt", height=100)
+        user_input = st.text_area("Your Prompt", height=130)
     with c2:
-        selected_strategys = st.multiselect(
-            "Strategy:", ["zero-shot cot", "few-shot cot", "zero-shot contrastive"]
+        selected_llm = st.selectbox(
+            "LLM:", ["ernie-bot-4", "gpt-3.5-turbo", "llama-7b"]
         )
-        st.write('num:', len(selected_strategys))
-    st.button("生成响应", on_click=click_prompt_generate_button())
+        session_state.llm_choice = selected_llm
+        selected_strategys = st.multiselect(
+            "Strategy:", ["zero-shot cot", "zero-shot contrastive", "zero-shot difficulty", "few-shot cot",
+                          "few-shot contrastive", "few-shot difficulty"]
+        )
+    st.button("生成响应", on_click=click_prompt_generate_button)
     if session_state.prompt_generate_button:
-        prompt_generator = PromptGenerator()
+        prompt_generator = PromptGenerator(session_state.llm_choice)
         for strategy in selected_strategys:
             response = prompt_generator.generate(user_input, strategy)
             session_state.response_result.append(response)
@@ -72,40 +99,40 @@ with tab2:
             with col:
                 if i == 0:
                     st.header("origin input")
-                    st.text_area(label="origin input", value=user_input, height=200, disabled=True)
+                    st.text_area(label="origin input", value=user_input, height=200)
                 else:
                     st.header(selected_strategys[i - 1])
                     st.text_area(label=selected_strategys[i - 1], value=session_state.response_result[i - 1],
-                                 height=200, disabled=True)
+                                 height=200)
 
 with tab3:
     st.title('Evaluation Different prompt generation strategies')
     eval_example_input = st.text_area("Example", height=100)
-    st.button("Generate Result", on_click=click_generate_result_button())
+    st.button("Generate Result", on_click=click_generate_result_button)
     if session_state.generate_result_button:
-        eval_llm = ErnieLLM()
         eval_columns = st.columns(len(selected_strategys) + 1)
         for i, col in enumerate(eval_columns):
             with col:
                 if i == 0:
                     st.header("origin result")
-                    generate_result = eval_llm.response(user_input + eval_example_input)
+                    generate_result = eval_llm_response(user_input + "\n" + eval_example_input, session_state.llm_choice )
                     st.text_area(label="origin result", value=generate_result, height=200)
                     session_state.answer_dict["origin result"] = generate_result
                 else:
                     st.header(selected_strategys[i - 1])
-                    generate_result = eval_llm.response(session_state.response_result[i - 1] + eval_example_input)
+                    generate_result = eval_llm_response(
+                        session_state.response_result[i - 1] + "\n" + eval_example_input, session_state.llm_choice )
                     st.text_area(
                         label=selected_strategys[i - 1],
                         value=generate_result,
                         height=200
                     )
                     session_state.answer_dict[selected_strategys[i - 1]] = generate_result
-    st.button("Eval", on_click=click_eval_button())
+
+    st.button("Eval", on_click=click_eval_button)
     if session_state.eval_button:
-        evaluator = Evaluator()
+        evaluator = Evaluator(session_state.llm_choice)
         eval_result = evaluator.evaluate(eval_example_input, session_state.answer_dict)
-        print(type(eval_result))
         for x, y in eval_result.items():
             st.write(x, y)
         st.write(eval_result)
@@ -120,15 +147,10 @@ with tab4:
     with c3:
         add_input = st.text_area(label="add", value="add", height=50)
 
-    st.button("生成修改结果", on_click=click_modify_button())
+    st.button("生成修改结果", on_click=click_modify_button)
     if session_state.modify_button:
-        modify_block = Modify()
-        modified_result = modify_block.GetModifyResult(
-            reserve=reserve_input,
-            delete=delete_input,
-            add=add_input
-        )
-        st.text_area(label="modified result", value=modified_result, height=50)
+        modified_res = modify_response(reserve_input, delete_input, add_input)
+        st.text_area(label="modified result", value=modified_res, height=50)
 
     # message("Hello, I'm a chatbot!")  # 显示聊天消息
     # message("How can I help you?", is_user=True)  # 将消息对齐到右侧

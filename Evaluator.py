@@ -32,12 +32,12 @@ class Evaluator:
         "zero-shot cot": "answer",
         "few-shot cot":"answer"
         }}
-        你的评估标准包括答案对问题的正确性，回答的友好程度等等
-        请你使用JSON格式返回一个字典，键为策略，值为对应的百分制分数，
+        你的评估标准包括答案的正确性、推理的顺畅程度、回答的专业性、回答
+        请你使用JSON格式返回一个字典，键为策略，值为一个列表，第一个元素是对应的百分制分数，第二个元素是给出这个分数的原因。
         一个可以参考的例子是
         {{
-        "zero-shot cot": "score",
-        "few-shot cot": "score"
+        "zero-shot cot": ["score","reason"],
+        "few-shot cot": ["score","reason"]
         }}
         接下来，你将收到问题与对应的答案字典：
         问题：{question}
